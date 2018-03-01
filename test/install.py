@@ -1,7 +1,7 @@
-from cython_npm.cythoncompile import install
+from cythoncompile import install
 Manymodules = [
-    './build_example',
-    './build_example/level2',
+    './example',
+    './example/level2',
     'here.pyx'
 ]
 install(Manymodules)

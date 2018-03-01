@@ -1,5 +1,6 @@
 import subprocess as cmd
 import os
+import sys
 
 
 def writeSetupFile(listfile: list, path='cython_modules'):
@@ -15,47 +16,52 @@ def writeSetupFile(listfile: list, path='cython_modules'):
     onefile.close()
 
 
-def writeInitFile(listfile: list, path:str,name:str):
+def writeInitFile(listfile: list, path: str, name: str):
     file_path = os.path.abspath(os.path.join(path, name))
-    # if not os.path.exists(file_path+'/__init__.py'):
-    onefile = open(file_path+'/__init__.py', "w")
-    # print(listfile,file_path)
-    name = name.replace('./', '').replace("/", ".")
-    for anyfile in listfile:
-        if type(anyfile) is not str:
-            raise TypeError
-        head,tail = os.path.split(anyfile)
-        onefile.write(
-            'from {} import {} \n'.format(name,tail[:-4]))
-    onefile.close()
+    if not os.path.exists(file_path+'/__init__.py'):
+        onefile = open(file_path+'/__init__.py', "w")
+        # print(listfile,file_path)
+        name = name.replace('./', '').replace("/", ".")
+        for anyfile in listfile:
+            if type(anyfile) is not str:
+                raise TypeError
+            head, tail = os.path.split(anyfile)
+            onefile.write(
+                'from {} import {} \n'.format(name, tail[:-4]))
+        onefile.close()
+
 
 def ccompile(path=None):
     if path is None:
         cmd.call('python cython_modules/setup.py build_ext --inplace', shell=True)
     else:
-        cmd.call('python cython_modules/setup.py build_ext --build-lib {}'.format(path), shell=True)
+        cmd.call(
+            'python cython_modules/setup.py build_ext --build-lib {}'.format(path), shell=True)
 
 
 def listFileinFolder(file_path: str):
-    listFile=[]
+    listFile = []
     for file in os.listdir(file_path):
         if file.endswith(".pyx"):
             listFile.append(file_path+"/"+file)
     return listFile
 
-def export(path:str, root=None):
+
+def export(path: str, root=None):
     files = []
     # Get directory of modules need to compile:
-    basedir = os.path.abspath(os.path.dirname(__file__))
+    basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
+    # __file__ will get the current cythoncompile path
     file_path = os.path.abspath(os.path.join(basedir, path))
     # print(file_path)
     # check if file or directory exist
     if not os.path.exists(file_path):
-        raise ValueError('Cannot compile this directory or file. It is not exist')
-    
+        raise ValueError(
+            'Cannot compile this directory or file. It is not exist')
+
     # check if it is a .pyx file
-    if not path.endswith(".pyx"):
-        if file_path==__file__:
+    if os.path.isdir(path):
+        if file_path == sys.argv[0]:
             raise ValueError('Cannot compile this directory or file')
         files = listFileinFolder(file_path)
         writeSetupFile(files)
@@ -84,12 +90,20 @@ def export(path:str, root=None):
     return files
 
 
-def install(listpath: list,root='./cython_modules'):
-    basedir = os.path.abspath(os.path.dirname(__file__))
+def install(listpath: list):
+    allpath = []
+    for path in listpath:
+        files = export(path)
+        allpath.append(files)
+    return allpath
+
+
+def installGlobal(listpath: list, root='./cython_modules'):
+    basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
     file_path = os.path.abspath(os.path.join(basedir, root))
     for path in listpath:
         files = export(path, root=root)
-        if not path.endswith(".pyx"):
+        if os.path.isdir(path):
             writeInitFile(files, file_path, path)
     # writing install code
     if not os.path.exists(file_path):
@@ -100,13 +114,15 @@ def install(listpath: list,root='./cython_modules'):
     onefile = open(file_path+'/cypm.py', "w")
     onefile.write("modules = dict() \n")
     for path in listpath:
-        name = path.replace('.pyx', '').replace('./','').replace('.', '').replace("/", ".")
-        onefile.write("import {} as x; modules['{}'] = x \n".format(name, name))
+        if os.path.isfile(path):
+            path = path.replace('.pyx', '')
+        name = path.replace('./', '').replace('.', '').replace("/", ".")
+        onefile.write(
+            "import {} as x; modules['{}'] = x \n".format(name, path))
     onefile.write("def require(modulesName: str): \n ")
     onefile.write("   cython=modules[modulesName] \n ")
     onefile.write("   return cython \n ")
     onefile.close()
 
-    
-# python setup.py build_ext --inplace
 
+# python setup.py build_ext --inplace
