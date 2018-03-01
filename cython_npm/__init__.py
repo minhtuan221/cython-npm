@@ -1,4 +1,4 @@
-import cythoncompile
+from . import cythoncompile
 
 __author__ = 'Minh Tuan Nguyen'
 __version__ = '0.1.0'
