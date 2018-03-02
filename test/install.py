@@ -1,4 +1,4 @@
-from cythoncompile import install
+from cython_npm.cythoncompile import install
 Manymodules = [
     './example',
     './example/level2',

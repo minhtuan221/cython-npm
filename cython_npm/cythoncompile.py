@@ -1,6 +1,11 @@
 import subprocess as cmd
 import os
 import sys
+from importlib import reload
+
+
+def hello():
+    print('import successfully')
 
 
 def writeSetupFile(listfile: list, path='cython_modules'):
@@ -98,7 +103,35 @@ def install(listpath: list):
     return allpath
 
 
-def installGlobal(listpath: list, root='./cython_modules'):
+def import_path(fullpath, recompile=False):
+    """ 
+    Import a file with full path specification. Allows one to
+    import from anywhere, something __import__ does not do. 
+    """
+    path, filename = os.path.split(fullpath)
+    filename, ext = os.path.splitext(filename)
+    sys.path.append(path)
+    module = __import__(filename)
+    if recompile:
+        reload(module)  # Might be out of date
+    del sys.path[-1]
+    return module
+
+
+def require(relative_path: str, recompile=False):
+    if not os.path.isdir or not os.path.isfile:
+        raise ValueError('require accept path only')
+    basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
+    file_path = os.path.abspath(os.path.join(basedir, relative_path))
+    try:
+        module = import_path(file_path, recompile=recompile)
+    except Exception as error:
+        print(error)
+        raise TypeError('Error when importing path')
+    return module
+
+
+def installGlobal(listpath: list, root='/usr/bin/cython_modules'):
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
     file_path = os.path.abspath(os.path.join(basedir, root))
     for path in listpath:
