@@ -1,6 +1,8 @@
 # cython-npm
 Cython project management like npm in nodejs. This project is inspired by npm in nodejs.
+
 ### Installation
+
 You can easily install by:
 ```
 pip install cython-npm
@@ -13,6 +15,7 @@ import pyximport; pyximport.install()
 ```
 But that it is not recommended to let **pyximport** build code on end user side as it *hooks into their import system*. The best way to cater for end users is to provide pre-built binary packages.
 So i wrote a package providing pre-built binary packages easily.
+
 #### Basic use to Complie file or folder:
 ``` 
 from cython_npm.cythoncompile import export
@@ -20,6 +23,7 @@ export('examplefile.pyx')
 export('./examplefolder')
 ```
 You should do this code once time only.
+
 ### Create install file like package.json
 You can also compile many files or folders at once time. Create a file name `install.py` in the root of your project/package and write the code below:
 ```
