@@ -8,10 +8,10 @@ def hello():
     print('import successfully')
 
 
-def writeSetupFile(listfile: list, path='cython_modules'):
-    if not os.path.exists('cython_modules'):
-        os.makedirs('cython_modules')
-    onefile = open('cython_modules/setup.py', "w")
+def writeSetupFile(listfile: list):
+    if not os.path.exists('build'):
+        os.makedirs('build')
+    onefile = open('build/setup.py', "w")
     onefile.write('from distutils.core import setup \n')
     onefile.write('from Cython.Build import cythonize \n')
     for anyfile in listfile:
@@ -38,10 +38,10 @@ def writeInitFile(listfile: list, path: str, name: str):
 
 def ccompile(path=None):
     if path is None:
-        cmd.call('python cython_modules/setup.py build_ext --inplace', shell=True)
+        cmd.call('python build/setup.py build_ext --inplace', shell=True)
     else:
         cmd.call(
-            'python cython_modules/setup.py build_ext --build-lib {}'.format(path), shell=True)
+            'python build/setup.py build_ext --build-lib {}'.format(path), shell=True)
 
 
 def listFileinFolder(file_path: str):
@@ -103,7 +103,7 @@ def install(listpath: list):
     return allpath
 
 
-def import_path(fullpath, recompile=False):
+def import_path(fullpath, recompile=True):
     """ 
     Import a file with full path specification. Allows one to
     import from anywhere, something __import__ does not do. 
@@ -113,14 +113,14 @@ def import_path(fullpath, recompile=False):
     sys.path.append(path)
     module = __import__(filename)
     if recompile:
-        reload(module)  # Might be out of date
+        reload(module)  # Might be already compile
     del sys.path[-1]
     return module
 
 
-def require(relative_path: str, recompile=False):
+def require(relative_path: str, recompile=True):
     if not os.path.isdir or not os.path.isfile:
-        raise ValueError('require accept path only')
+        raise ValueError('require function accept path only')
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
     file_path = os.path.abspath(os.path.join(basedir, relative_path))
     try:
