@@ -8,19 +8,23 @@ You can easily install by:
 pip install cython-npm
 ```
 
-### Quickstart
+### What problems does it solve ?
 When using cython, we face the problem of compile cython file. We can do it easily by:
 ```
 import pyximport; pyximport.install()
 ```
 But that it is not recommended to let **pyximport** build code on end user side as it *hooks into their import system*. The best way to cater for end users is to provide pre-built binary packages.
-So i wrote a package providing pre-built binary packages easily.
+So this project compiles .pyx file and provides pre-built binary packages for easy of use.
 
-#### Basic use to Complie file or folder:
+### Quickstart:
+Basic use to Complie file or folder
 ``` 
 from cython_npm.cythoncompile import export
 export('examplefile.pyx')
 export('./examplefolder')
+# then import them to use
+import examplefile
+from examplefolder import *
 ```
 You should do this code once time only.
 
@@ -39,18 +43,19 @@ Run the file before start your project
 ```
 python install.py
 ```
-
+Or add first line `import install` in startup file of your project
 ### Using require('path') as nodejs
-You can also relative import in python by `require` function. For example:
+You can also relative or fullpath import in python by `require` function. For example:
 ```
 from cython_npm.cythoncompile import require
 
-# import .pyx file. Will cause error if not compile yet
-examplefile = require('../parentpackage') # import cython package from parent folder
+# import .pyx file. Will cause error if it is not compiled by export() yet. 
+# Default value of recompile is True, only apply for .py file. To import .pyx, change recompile=False
+examplefile = require('../parentpackage', recompile=False) # import cython package from parent folder
 examplefile.somefunction()
 
 # it also support relative import .py file
-examplefile = require('../parentpackage', recompile=True) 
+examplefile = require('../parentpackage')
 examplefile.somefunction()
 
 ```
