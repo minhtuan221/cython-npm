@@ -44,15 +44,20 @@ def ccompile(path=None):
             'python build/setup.py build_ext --build-lib {}'.format(path), shell=True)
 
 
-def listFileinFolder(file_path: str):
+def listFileinFolder(file_path: str, suffix='.pyx'):
     listFile = []
     for file in os.listdir(file_path):
-        if file.endswith(".pyx"):
-            listFile.append(file_path+"/"+file)
+        if not os.path.isdir(file):
+            if file.endswith(suffix):
+                listFile.append(file_path+"/"+file)
+        if os.path.isdir(os.path.join(file_path, file)):
+            folder_path = os.path.abspath(os.path.join(file_path, file))
+            # print(folder_path)
+            listFile.extend(listFileinFolder(folder_path, suffix=suffix))
     return listFile
 
 
-def export(path: str, root=None):
+def export(path: str, root=None, initFile=True):
     files = []
     # Get directory of modules need to compile:
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -70,7 +75,8 @@ def export(path: str, root=None):
             raise ValueError('Cannot compile this directory or file')
         files = listFileinFolder(file_path)
         writeSetupFile(files)
-        writeInitFile(files, basedir, path)
+        if initFile:
+            writeInitFile(files, basedir, path)
         # must be basedir because setup code will create a folder name as path
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
@@ -128,6 +134,12 @@ def require(relative_path: str, recompile=True):
     except Exception as error:
         print(error)
         raise TypeError('Error when importing path')
+    return module
+
+
+def requirepyx(relative_path: str, recompile=False):
+    export(relative_path)
+    module = require(relative_path, recompile=recompile)
     return module
 
 

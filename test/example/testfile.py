@@ -5,6 +5,7 @@ import sys, os
 # b = require('./build_example')
 # b.hello.Hello()
 from importlib import reload
+from cython_npm.cythoncompile import require
 
 def import_path(fullpath, recompile=False):
     """ 
@@ -20,20 +21,8 @@ def import_path(fullpath, recompile=False):
     del sys.path[-1]
     return module
 
-
-def require(relative_path: str, recompile=False):
-    if not os.path.isdir or not os.path.isfile:
-        raise ValueError('require accept path only')
-    basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
-    file_path = os.path.abspath(os.path.join(basedir, relative_path))
-    try:
-        module = import_path(file_path, recompile=recompile)
-    except Exception as error:
-        print(error)
-        raise TypeError('Error when importing path')
-    return module
-
 # here = import_path(
 #     '/Users/minhtuannguyen/MyWorking/Privates/cython/cython-npm/test/here')
-here = require('../here')
-here.Imhere()
+h = require('./')
+h.hello.Hello()
+h.secondapp.goodbye()
