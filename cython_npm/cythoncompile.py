@@ -132,12 +132,12 @@ def require(relative_path: str, recompile=True):
     if not os.path.isdir(file_path) and not os.path.isfile(file_path):
         print('File path error:', file_path)
         raise ValueError('require function accept path of folder or file only')
-    try:
-        module = import_path(file_path, recompile=recompile)
-    except Exception as error:
-        print(error)
-        print(file_path)
-        raise TypeError('Error when importing path')
+#     try:
+    module = import_path(file_path, recompile=recompile)
+#     except Exception as error:
+#         print(error)
+#         print(file_path)
+#         raise TypeError('Error when importing path')
     return module
 
 
