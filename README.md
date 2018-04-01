@@ -10,7 +10,7 @@ pip install cython-npm
 
 ### What problems does it solve ?
 When using cython, we face the problem of compile cython file. We can do it easily by:
-```
+```python
 import pyximport; pyximport.install()
 ```
 But that it is not recommended to let **pyximport** build code on end user side as it *hooks into their import system*. The best way to cater for end users is to provide pre-built binary packages.
@@ -18,7 +18,7 @@ So this project compiles .pyx file and provides pre-built binary packages for ea
 
 ### Quickstart:
 Basic use to Complie file or folder
-``` 
+```python
 from cython_npm.cythoncompile import export
 export('examplefile.pyx')
 export('./examplefolder')
@@ -30,12 +30,12 @@ You should do this code once time only.
 
 ### Create install file like package.json
 You can also compile many files or folders at once time. Create a file name `install.py` in the root of your project/package and write the code below:
-```
+```python
 from cython_npm.cythoncompile import install
 Manymodules = [
     # put your modules list here
-    examplefile.pyx,
-    ./examplefolder
+    'examplefile.pyx',
+    './examplefolder'
 ]
 install(Manymodules)
 ```
@@ -46,7 +46,7 @@ python install.py
 Or add first line `import install` in startup file of your project. Use install or export in parent folder will compile all .pyx file in subdirectories.
 ### Using require('path') as nodejs
 You can also relative or fullpath import in python by `require` function. For example:
-```
+```python
 from cython_npm.cythoncompile import require
 
 # import .pyx file. Will cause error if it is not compiled by export() yet. 
@@ -63,7 +63,7 @@ Using requirepyx('path'): `requirepyx` is simillar to `require` except:
 * Use for cython file ('.pyx') only
 * Equivalent to export('.pyx file') and require('.pyx file')
 Example:
-```
+```python
 from cython_npm.cythoncompile import export
 export('examplefile')
 require('examplefile',recompile=False)
@@ -89,7 +89,7 @@ Hypothesis:
 0. Recall the speed of Swift: 0m0.416s, Go: 0m0.592s and Pypy: 0m2.633s
 
 1. Test pure python code:
-    ```
+    ```python
     sum = 0
 
     for e in range(30):
@@ -119,13 +119,13 @@ Hypothesis:
     sys     0m1.061s
     ```
 2. Test cython code: Create run.py with code: 
-    ```
+    ```python
     from cython_npm.cythoncompile import export
     export('test_cython.pyx') # will do once time
     import test_cython
     ```
     Code in __test_cython.pyx__:
-    ```
+    ```python
     cdef long sum = 0
     cdef int i
     cdef int e
@@ -156,7 +156,7 @@ Hypothesis:
     sys     0m1.211s
     ```
 3. Test cython code with list optimization and cache: create similar run.py. Code in __test_cythoncache.pyx__:
-    ```
+    ```python
     from functools import lru_cache
     @lru_cache(maxsize=128)
     def dotest():
@@ -186,7 +186,7 @@ Hypothesis:
     sys     0m1.001s
     ```
 4. Test cython code with cache and C array: create similar run.py. Code in **test_cythoncache.pyx**:
-    ```
+    ```python
     from functools import lru_cache
     @lru_cache(maxsize=128)
     def dotest():
