@@ -8,7 +8,7 @@ def hello():
     print('import successfully')
 
 
-def writeSetupFile(listfile: list):
+def write_setup_file(listfile: list):
     if not os.path.exists('build'):
         os.makedirs('build')
     onefile = open('build/setup.py', "w")
@@ -21,7 +21,7 @@ def writeSetupFile(listfile: list):
     onefile.close()
 
 
-def writeInitFile(listfile: list, path: str, name: str):
+def write_init_file(listfile: list, path: str, name: str):
     file_path = os.path.abspath(os.path.join(path, name))
     if not os.path.exists(file_path+'/__init__.py'):
         onefile = open(file_path+'/__init__.py', "w")
@@ -76,9 +76,9 @@ def export(path: str, root=None, initFile=True):
             print('File path error:',file_path)
             raise ValueError('Cannot compile this directory or file')
         files = listFileinFolder(file_path)
-        writeSetupFile(files)
+        write_setup_file(files)
         if initFile:
-            writeInitFile(files, basedir, path)
+            write_init_file(files, basedir, path)
         # must be basedir because setup code will create a folder name as path
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
@@ -94,7 +94,7 @@ def export(path: str, root=None, initFile=True):
             ccompile(path=basedir)
     else:
         files.append(path)
-        writeSetupFile(files)
+        write_setup_file(files)
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
             ccompile(path=basedir)
@@ -153,7 +153,7 @@ def installGlobal(listpath: list, root='/usr/bin/cython_modules'):
     for path in listpath:
         files = export(path, root=root)
         if os.path.isdir(path):
-            writeInitFile(files, file_path, path)
+            write_init_file(files, file_path, path)
     # writing install code
     if not os.path.exists(file_path):
         os.makedirs(file_path)

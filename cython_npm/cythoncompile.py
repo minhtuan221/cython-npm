@@ -8,7 +8,7 @@ def hello():
     print('import successfully')
 
 
-def writeSetupFile(listfile: list):
+def write_setup_file(listfile: list):
     if not os.path.exists('build'):
         os.makedirs('build')
     onefile = open('build/setup.py', "w")
@@ -21,7 +21,7 @@ def writeSetupFile(listfile: list):
     onefile.close()
 
 
-def writeInitFile(listfile: list, path: str, name: str):
+def write_init_file(listfile: list, path: str, name: str):
     file_path = os.path.abspath(os.path.join(path, name))
     if not os.path.exists(file_path+'/__init__.py'):
         onefile = open(file_path+'/__init__.py', "w")
@@ -44,20 +44,19 @@ def ccompile(path=None):
             'python build/setup.py build_ext --build-lib {}'.format(path), shell=True)
 
 
-def listFileinFolder(file_path: str, suffix='.pyx'):
-    listFile = []
+def list_file_in_folder(file_path: str, suffix='.pyx'):
+    list_file = []
     for file in os.listdir(file_path):
-        if not os.path.isdir(file):
-            if file.endswith(suffix):
-                listFile.append(file_path+"/"+file)
+        if not os.path.isdir(file) and file.endswith(suffix):
+            list_file.append(file_path+"/"+file)
         if os.path.isdir(os.path.join(file_path, file)):
             folder_path = os.path.abspath(os.path.join(file_path, file))
             # print(folder_path)
-            listFile.extend(listFileinFolder(folder_path, suffix=suffix))
-    return listFile
+            list_file.extend(list_file_in_folder(folder_path, suffix=suffix))
+    return list_file
 
 
-def export(path: str, root=None, initFile=True):
+def export(path: str, root=None, init_file=True):
     files = []
     # Get directory of modules need to compile:
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -75,10 +74,10 @@ def export(path: str, root=None, initFile=True):
         if file_path == sys.argv[0]:
             print('File path error:',file_path)
             raise ValueError('Cannot compile this directory or file')
-        files = listFileinFolder(file_path)
-        writeSetupFile(files)
-        if initFile:
-            writeInitFile(files, basedir, path)
+        files = list_file_in_folder(file_path)
+        write_setup_file(files)
+        if init_file:
+            write_init_file(files, basedir, path)
         # must be basedir because setup code will create a folder name as path
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
@@ -94,7 +93,7 @@ def export(path: str, root=None, initFile=True):
             ccompile(path=basedir)
     else:
         files.append(path)
-        writeSetupFile(files)
+        write_setup_file(files)
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
             ccompile(path=basedir)
@@ -147,13 +146,13 @@ def requirepyx(relative_path: str, recompile=False):
     return module
 
 
-def installGlobal(listpath: list, root='/usr/bin/cython_modules'):
+def install_global(listpath: list, root='/usr/bin/cython_modules'):
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
     file_path = os.path.abspath(os.path.join(basedir, root))
     for path in listpath:
         files = export(path, root=root)
         if os.path.isdir(path):
-            writeInitFile(files, file_path, path)
+            write_init_file(files, file_path, path)
     # writing install code
     if not os.path.exists(file_path):
         os.makedirs(file_path)
