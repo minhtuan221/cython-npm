@@ -19,7 +19,7 @@ except (IOError, ImportError):
 
 setup(
     name='cython_npm',
-    version='0.1.63',
+    version='0.1.71',
     description='Cython project management like npm in nodejs',
     long_description=readme,
     author=cython_npm.__author__,

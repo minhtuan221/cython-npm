@@ -57,6 +57,23 @@ def list_file_in_folder(file_path: str, suffix='.pyx'):
 
 
 def export(path: str, root=None, init_file=True):
+    """Compile cython file (.pyx) into .so C-share file which can import and run in cpython as normal python package
+    
+    Arguments:
+        path {str} -- Relative or absolute path of file or folder for import
+    
+    Keyword Arguments:
+        root {[str]} -- is a Folder relative or absolute path. If not None, it will export to the folder as specified in root (default: {None})
+        init_file {bool} -- Create __init__ file in root folder. Apply when only root is not None (default: {True})
+    
+    Raises:
+        ValueError -- [description]
+        ValueError -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
+
     files = []
     # Get directory of modules need to compile:
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -126,6 +143,18 @@ def import_path(fullpath, recompile=True):
 
 
 def require(relative_path: str, recompile=True):
+    """Return a python module which is similar to require in nodejs
+    
+    Arguments:
+        relative_path {str} -- Relative or absolute path of file or folder for import
+    
+    Keyword Arguments:
+        recompile {bool} -- [description] (default: {True})
+    
+    Raises:
+        ValueError -- [description]
+    """
+
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
     file_path = os.path.abspath(os.path.join(basedir, relative_path))
     if not os.path.isdir(file_path) and not os.path.isfile(file_path):
@@ -141,6 +170,17 @@ def require(relative_path: str, recompile=True):
 
 
 def requirepyx(relative_path: str, recompile=False):
+    """Return a cython module (.pyx) which is similar to require in nodejs. This action also export the module before import.
+    
+    Arguments:
+        relative_path {str} -- Relative or absolute path of file or folder for import
+    
+    Keyword Arguments:
+        recompile {bool} -- [description] (default: {True})
+    
+    Raises:
+        ValueError -- [description]
+    """
     export(relative_path)
     module = require(relative_path, recompile=recompile)
     return module

@@ -72,6 +72,31 @@ from cython_npm.cythoncompile import requirepyx
 requirepyx('examplefile')
 ```
 
+### Using typecheck
+Another utils is typecheck support to raise error in typing module (from python 3.3):
+
+```python
+from cython_npm.typecheck import typecheck
+
+@type_check
+def checkstr(s: Any)->(None, str):
+    return None, s
+
+x,y = checkstr('tuan')
+print(x,y)
+
+try:
+    checkstr(120)
+except Exception as error:
+    print(error)
+    traceback.print_exc()
+    
+# That will raise an error of TypeError
+checkstr(200)
+
+```
+
+
 ### Example: Cython vs speed test battle
 This example compare the speed between cython vs python, Swift, Go and Code differences in doing a short calculation. Cython_npm is used in the test. This test is forked from 'marcinkliks', the original code and test is here: 
 [Swift vs Go vs Python battle](http://www.marcinkliks.pl/2015/02/22/swift-vs-others/). Note: We use Swift and Go test results as pattern and do not retest them. Go to see in test folder in github for more examples

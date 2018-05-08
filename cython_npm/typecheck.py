@@ -1,4 +1,4 @@
-from typing import get_type_hints
+from typing import get_type_hints, Any
 from functools import wraps
 from inspect import getfullargspec
 import traceback
@@ -10,15 +10,15 @@ def match_return(all_required, all_results):
         raise TypeError(
             'Number of return Argument and required is not match')
     for requirements, result in zip(all_required, all_results):
-        print(requirements, result)
+        # print(requirements, result)
         if requirements is None:
             if result is not None:
                 raise TypeError(
                     'Return value %r is not of type %s' % (
                         result, requirements)
                 )
-        elif not isinstance(result, requirements):
-            print(requirements, result)
+        elif requirements != Any and not isinstance(result, requirements):
+            # print(requirements, result)
             raise TypeError(
                 'Return value %r is not of type %s' % (
                     result, requirements)
@@ -26,30 +26,38 @@ def match_return(all_required, all_results):
 
 def validate_input(func, **kwargs):
     hints = get_type_hints(func)
-
+    # print(hints)
+    #get all type of result function
+    all_results = tuple(func(**kwargs))
     # iterate all type hints
     for attr_name, attr_type in hints.items():
         if attr_name == 'return':
-            #get all type of result function
-            all_results = list(func(**kwargs))
             # get all type of requirement
             all_required = hints['return']
             match_return(all_required, all_results)
-        elif not isinstance(kwargs[attr_name], attr_type):
+        elif attr_type!=Any and not isinstance(kwargs[attr_name], attr_type):
             raise TypeError(
                 'Argument %r = %r is not of type %s' % (attr_name, kwargs[attr_name], attr_type)
             )
+    return all_results
 
 
 def type_check(decorator):
+    """Function check all type of input argument and return value of 'def' as specified in typing module (from python 3.3). It will raise Type Error if any wrong type.
+    
+    Arguments:
+        decorator {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
+
     @wraps(decorator)
     def wrapped_decorator(*args, **kwargs):
         # translate *args into **kwargs
         func_args = getfullargspec(decorator)[0]
         kwargs.update(dict(zip(func_args, args)))
-
-        validate_input(decorator, **kwargs)
-        return decorator(**kwargs)
+        return validate_input(decorator, **kwargs)
 
     return wrapped_decorator
 
@@ -208,16 +216,17 @@ def add_nums_incorrect(a, b):
 
 def main():
     @type_check
-    def checkstr(s: str)->(None, str):
-        
+    def checkstr(s: Any)->(Any, str):
         return None, s
 
-    checkstr('tuan')
+    x,y = checkstr('tuan')
+    print(x,y)
     try:
         checkstr(120)
     except Exception as error:
         print(error)
         traceback.print_exc()
+    # That will raise an error of TypeError
     checkstr(200)
     print(checkstr(20))
 
