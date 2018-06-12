@@ -1,4 +1,4 @@
-from cythoncompile import require, export
+from cythoncompile import require, export, requirepyx
 
 export('./example')
 from example import hello

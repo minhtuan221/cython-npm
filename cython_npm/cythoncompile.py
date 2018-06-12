@@ -2,6 +2,7 @@ import subprocess as cmd
 import os
 import sys
 from importlib import reload
+import traceback
 
 
 def hello():
@@ -30,7 +31,7 @@ def write_init_file(listfile: list, path: str, name: str):
         for anyfile in listfile:
             if type(anyfile) is not str:
                 raise TypeError
-            head, tail = os.path.split(anyfile)
+            _head, tail = os.path.split(anyfile)
             onefile.write(
                 'from {} import {} \n'.format(name, tail[:-4]))
         onefile.close()
@@ -133,7 +134,7 @@ def import_path(fullpath, recompile=True):
     import from anywhere, something __import__ does not do. 
     """
     path, filename = os.path.split(fullpath)
-    filename, ext = os.path.splitext(filename)
+    filename, _ext = os.path.splitext(filename)
     sys.path.append(path)
     module = __import__(filename)
     if recompile:
@@ -157,15 +158,12 @@ def require(relative_path: str, recompile=True):
 
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
     file_path = os.path.abspath(os.path.join(basedir, relative_path))
-    if not os.path.isdir(file_path) and not os.path.isfile(file_path):
-        print('File path error:', file_path)
-        raise ValueError('require function accept path of folder or file only')
-#     try:
-    module = import_path(file_path, recompile=recompile)
-#     except Exception as error:
-#         print(error)
-#         print(file_path)
-#         raise TypeError('Error when importing path')
+    try:
+        module = import_path(file_path, recompile=recompile)
+    except:
+        traceback.print_exc()
+        print(file_path)
+        raise ImportError('Error when importing path')
     return module
 
 

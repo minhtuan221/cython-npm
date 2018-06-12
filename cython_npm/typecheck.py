@@ -28,18 +28,31 @@ def validate_input(func, **kwargs):
     hints = get_type_hints(func)
     # print(hints)
     #get all type of result function
-    all_results = tuple(func(**kwargs))
+    all_results = func(**kwargs)
+    try:
+        len(all_results)
+    except:
+        all_results = (all_results,)
+
+    # print('all_results', all_results)
     # iterate all type hints
     for attr_name, attr_type in hints.items():
         if attr_name == 'return':
             # get all type of requirement
             all_required = hints['return']
+            try:
+                len(all_required)
+            except:
+                all_required = (all_required,)
             match_return(all_required, all_results)
         elif attr_type!=Any and not isinstance(kwargs[attr_name], attr_type):
             raise TypeError(
                 'Argument %r = %r is not of type %s' % (attr_name, kwargs[attr_name], attr_type)
             )
-    return all_results
+    if len(all_results)==1:
+        return all_results[0]
+    else:
+        return all_results
 
 
 def type_check(decorator):
@@ -56,7 +69,12 @@ def type_check(decorator):
     def wrapped_decorator(*args, **kwargs):
         # translate *args into **kwargs
         func_args = getfullargspec(decorator)[0]
+        default_kwargs = getfullargspec(decorator).defaults
         kwargs.update(dict(zip(func_args, args)))
+        # update default value
+        func_defaults = [arg for arg in func_args if arg not in kwargs]
+        kwargs.update(dict(zip(func_defaults, default_kwargs)))
+        # print('func_args=', func_args, 'kwargs=', kwargs)
         return validate_input(decorator, **kwargs)
 
     return wrapped_decorator
@@ -216,19 +234,37 @@ def add_nums_incorrect(a, b):
 
 def main():
     @type_check
-    def checkstr(s: Any)->(Any, str):
+    def checkstr(s: str='something')->(Any, str):
         return None, s
+
+    @type_check
+    def a_plus_b(a:int, b:int=0)->(int):
+        return a+b
+    
+    @type_check
+    def plusabc(a: int, b: int=1, c:int=2)->(int):
+        return a+b+c
+    
+    @type_check
+    def return_none(a: int, b: int=1, c: int=2)->(None):
+        print('a+b+c=', a+b+c)
 
     x,y = checkstr('tuan')
     print(x,y)
-    try:
-        checkstr(120)
-    except Exception as error:
-        print(error)
-        traceback.print_exc()
-    # That will raise an error of TypeError
-    checkstr(200)
-    print(checkstr(20))
+    z = a_plus_b(10,30)
+    print(z)
+    z2 = a_plus_b(1)
+    print(z2)
+    print(plusabc(0))
+    print(return_none(12))
+    # try:
+    #     checkstr(120)
+    # except Exception as error:
+    #     print(error)
+    #     traceback.print_exc()
+    # # That will raise an error of TypeError
+    # checkstr(200)
+    # print(checkstr(20))
 
 
 if __name__ == '__main__':
