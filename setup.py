@@ -19,7 +19,7 @@ except (IOError, ImportError):
 
 setup(
     name='cython_npm',
-    version='0.2.1',
+    version='0.2.2',
     description='Cython project management like npm in nodejs',
     long_description=readme,
     author=cython_npm.__author__,
@@ -33,6 +33,8 @@ setup(
         'Environment :: Console',
         'Operating System :: POSIX',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',],
     # entry_points={'console_scripts': [

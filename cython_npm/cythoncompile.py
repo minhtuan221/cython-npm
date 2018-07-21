@@ -9,7 +9,7 @@ def hello():
     print('import successfully')
 
 
-def write_setup_file(listfile: list):
+def write_setup_file(listfile):
     if not os.path.exists('build'):
         os.makedirs('build')
     onefile = open('build/setup.py', "w")
@@ -22,7 +22,7 @@ def write_setup_file(listfile: list):
     onefile.close()
 
 
-def write_init_file(listfile: list, path: str, name: str):
+def write_init_file(listfile, path, name):
     file_path = os.path.abspath(os.path.join(path, name))
     if not os.path.exists(file_path+'/__init__.py'):
         onefile = open(file_path+'/__init__.py', "w")
@@ -45,7 +45,7 @@ def ccompile(path=None):
             'python build/setup.py build_ext --build-lib {}'.format(path), shell=True)
 
 
-def list_file_in_folder(file_path: str, suffix='.pyx'):
+def list_file_in_folder(file_path, suffix='.pyx'):
     list_file = []
     for file in os.listdir(file_path):
         if not os.path.isdir(file) and file.endswith(suffix):
@@ -57,7 +57,7 @@ def list_file_in_folder(file_path: str, suffix='.pyx'):
     return list_file
 
 
-def export(path: str, root=None, init_file=True):
+def export(path, root=None, init_file=True):
     """Compile cython file (.pyx) into .so C-share file which can import and run in cpython as normal python package
     
     Arguments:
@@ -120,7 +120,7 @@ def export(path: str, root=None, init_file=True):
     return files
 
 
-def install(listpath: list):
+def install(listpath):
     allpath = []
     for path in listpath:
         files = export(path)
@@ -143,7 +143,7 @@ def import_path(fullpath, recompile=True):
     return module
 
 
-def require(relative_path: str, recompile=True):
+def require(relative_path, recompile=True):
     """Return a python module which is similar to require in nodejs
     
     Arguments:
@@ -167,7 +167,7 @@ def require(relative_path: str, recompile=True):
     return module
 
 
-def requirepyx(relative_path: str, recompile=False):
+def requirepyx(relative_path, recompile=False):
     """Return a cython module (.pyx) which is similar to require in nodejs. This action also export the module before import.
     
     Arguments:
@@ -184,7 +184,7 @@ def requirepyx(relative_path: str, recompile=False):
     return module
 
 
-def install_global(listpath: list, root='/usr/bin/cython_modules'):
+def install_global(listpath, root='/usr/bin/cython_modules'):
     basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
     file_path = os.path.abspath(os.path.join(basedir, root))
     for path in listpath:
