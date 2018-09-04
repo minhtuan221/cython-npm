@@ -41,9 +41,13 @@ def write_init_file(listfile, path, name):
         onefile.close()
 
 
-def ccompile(path=None):
+def ccompile(path=None, name=None):
     if path is None:
-        cmd.call('python build/setup.py build_ext --inplace', shell=True)
+        if name:
+            cmd.call('python build/setup.py build_ext --inplace –name {}'.format(name), shell=True)
+        else:
+            cmd.call(
+                'python build/setup.py build_ext --inplace', shell=True)
     else:
         cmd.call(
             'python build/setup.py build_ext --build-lib {}'.format(path), shell=True)
@@ -110,17 +114,17 @@ def export(path, name=None, root=None, init_file=True):
                 onefile = open(file_path+'/__init__.py', "w")
                 onefile.close()
             # print(file_path)
-            ccompile(path=basedir)
+            ccompile(path=basedir, name=name)
         else:
-            ccompile(path=basedir)
+            ccompile(path=basedir, name=name)
     else:
         files.append(path)
         write_setup_file(files, name=name)
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
-            ccompile(path=basedir)
+            ccompile(path=basedir, name=name)
         else:
-            ccompile()
+            ccompile(name=name)
     return files
 
 
