@@ -9,7 +9,7 @@ def hello():
     print('import successfully')
 
 
-def write_setup_file(listfile):
+def write_setup_file(listfile, name=None):
     if not os.path.exists('build'):
         os.makedirs('build')
     onefile = open('build/setup.py', "w")
@@ -18,7 +18,11 @@ def write_setup_file(listfile):
     for anyfile in listfile:
         if type(anyfile) is not str:
             raise TypeError
-        onefile.write('setup(ext_modules=cythonize("{}")) \n'.format(anyfile))
+        if name:
+            onefile.write(
+                'setup(name="{}",ext_modules=cythonize("{}")) \n'.format(name,anyfile))
+        else:
+            onefile.write('setup(ext_modules=cythonize("{}")) \n'.format(anyfile))
     onefile.close()
 
 
@@ -57,7 +61,7 @@ def list_file_in_folder(file_path, suffix='.pyx'):
     return list_file
 
 
-def export(path, root=None, init_file=True):
+def export(path, name=None, root=None, init_file=True):
     """Compile cython file (.pyx) into .so C-share file which can import and run in cpython as normal python package
     
     Arguments:
@@ -93,7 +97,7 @@ def export(path, root=None, init_file=True):
             print('File path error:',file_path)
             raise ValueError('Cannot compile this directory or file')
         files = list_file_in_folder(file_path)
-        write_setup_file(files)
+        write_setup_file(files, name=name)
         if init_file:
             write_init_file(files, basedir, path)
         # must be basedir because setup code will create a folder name as path
@@ -111,7 +115,7 @@ def export(path, root=None, init_file=True):
             ccompile(path=basedir)
     else:
         files.append(path)
-        write_setup_file(files)
+        write_setup_file(files, name=name)
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
             ccompile(path=basedir)

@@ -1,5 +1,9 @@
 ## Speed test battle
 
+## Run .so file:
+
+gcc c.c t.so -Wl,-rpath=$(pwd)
+
 ### script for test
 
 #### test pure python code
