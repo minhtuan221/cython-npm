@@ -3,11 +3,16 @@ import os
 import sys
 from importlib import reload
 import traceback
+import glob
 
 
-def hello():
-    print('import successfully')
-
+def is_included(word, include=[]):
+    for p in include:
+        if '*' not in p:
+            return p in word
+        else:
+            glob.glob(word, recursive=False)
+    return 
 
 def write_setup_file(listfile, name=None):
     if not os.path.exists('build'):
@@ -18,11 +23,13 @@ def write_setup_file(listfile, name=None):
     for anyfile in listfile:
         if type(anyfile) is not str:
             raise TypeError
+        anyfile = anyfile.replace("\\", "/")  # for window path
         if name:
             onefile.write(
-                'setup(name="{}",ext_modules=cythonize("{}")) \n'.format(name,anyfile))
+                'setup(name="{}",ext_modules=cythonize("{}", {})) \n'.format(name, anyfile, "language_level="+str(sys.version_info[0])))
         else:
-            onefile.write('setup(ext_modules=cythonize("{}")) \n'.format(anyfile))
+            onefile.write('setup(ext_modules=cythonize("{}", {})) \n'.format(
+                anyfile, "language_level=" + str(sys.version_info[0])))
     onefile.close()
 
 
@@ -44,7 +51,8 @@ def write_init_file(listfile, path, name):
 def ccompile(path=None, name=None):
     if path is None:
         if name:
-            cmd.call('python build/setup.py build_ext --inplace –name {}'.format(name), shell=True)
+            cmd.call(
+                'python build/setup.py build_ext --inplace –name {}'.format(name), shell=True)
         else:
             cmd.call(
                 'python build/setup.py build_ext --inplace', shell=True)
@@ -53,10 +61,10 @@ def ccompile(path=None, name=None):
             'python build/setup.py build_ext --build-lib {}'.format(path), shell=True)
 
 
-def list_file_in_folder(file_path, suffix='.pyx'):
+def list_file_in_folder(file_path, suffix='.pyx', include=[], exclude=[]):
     list_file = []
     for file in os.listdir(file_path):
-        if not os.path.isdir(file) and file.endswith(suffix):
+        if not os.path.isdir(file) and file.endswith(suffix) and not file.endswith('__init__.py'): # exclude this refer to https://github.com/cython/cython/issues/2968
             list_file.append(file_path+"/"+file)
         if os.path.isdir(os.path.join(file_path, file)):
             folder_path = os.path.abspath(os.path.join(file_path, file))
@@ -65,20 +73,20 @@ def list_file_in_folder(file_path, suffix='.pyx'):
     return list_file
 
 
-def export(path, name=None, root=None, init_file=True):
+def export(path, name=None, root=None, init_file=False, suffix='.pyx'):
     """Compile cython file (.pyx) into .so C-share file which can import and run in cpython as normal python package
-    
+
     Arguments:
         path {str} -- Relative or absolute path of file or folder for import
-    
+
     Keyword Arguments:
         root {[str]} -- is a Folder relative or absolute path. If not None, it will export to the folder as specified in root (default: {None})
         init_file {bool} -- Create __init__ file in root folder. Apply when only root is not None (default: {True})
-    
+
     Raises:
         ValueError -- [description]
         ValueError -- [description]
-    
+
     Returns:
         [type] -- [description]
     """
@@ -98,9 +106,9 @@ def export(path, name=None, root=None, init_file=True):
     # check if it is a .pyx file
     if os.path.isdir(path):
         if file_path == sys.argv[0]:
-            print('File path error:',file_path)
+            print('File path error:', file_path)
             raise ValueError('Cannot compile this directory or file')
-        files = list_file_in_folder(file_path)
+        files = list_file_in_folder(file_path, suffix=suffix)
         write_setup_file(files, name=name)
         if init_file:
             write_init_file(files, basedir, path)
@@ -153,13 +161,13 @@ def import_path(fullpath, recompile=True):
 
 def require(relative_path, recompile=True):
     """Return a python module which is similar to require in nodejs
-    
+
     Arguments:
         relative_path {str} -- Relative or absolute path of file or folder for import
-    
+
     Keyword Arguments:
         recompile {bool} -- [description] (default: {True})
-    
+
     Raises:
         ValueError -- [description]
     """
@@ -177,13 +185,13 @@ def require(relative_path, recompile=True):
 
 def requirepyx(relative_path, recompile=False):
     """Return a cython module (.pyx) which is similar to require in nodejs. This action also export the module before import.
-    
+
     Arguments:
         relative_path {str} -- Relative or absolute path of file or folder for import
-    
+
     Keyword Arguments:
         recompile {bool} -- [description] (default: {True})
-    
+
     Raises:
         ValueError -- [description]
     """
