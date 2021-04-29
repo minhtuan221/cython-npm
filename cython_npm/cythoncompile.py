@@ -4,15 +4,37 @@ import sys
 from importlib import reload
 import traceback
 import glob
+import re
+from typing import List
+from pathlib import Path
 
+def list_file_by_glob(path_pattern, suffix='*.py'):
+    res = []
+    if os.path.isfile(path_pattern):
+        return [str(Path(path_pattern).absolute())]
+    for path in Path(path_pattern).glob(suffix):
+        res.append(str(path.absolute()))
+    return res
 
-def is_included(word, include=[]):
+# list_file_by_glob('./smart_trade/pkgs/signalr', '**/order.py')
+
+def is_included(word: str, include: List[str]=[]):
     for p in include:
-        if '*' not in p:
-            return p in word
-        else:
-            glob.glob(word, recursive=False)
-    return 
+        if '*' not in p and p == word:
+            return True
+        elif p.startswith('*') or p.endswith('*'):
+            x = p.replace("*","").replace("./","/")
+            if x in word:
+                return True
+        # elif p.endswith('*'):
+        #     x = p.replace("*","").replace("./","/")
+        #     if word.startswith(x):
+        #         return True
+        # elif p.startswith('*'):
+        #     x = p.replace("*","").replace("./","/")
+        #     if word.endswith(x):
+        #         return True
+    return False
 
 def write_setup_file(listfile, name=None):
     if not os.path.exists('build'):
@@ -20,20 +42,20 @@ def write_setup_file(listfile, name=None):
     onefile = open('build/setup.py', "w")
     onefile.write('from distutils.core import setup \n')
     onefile.write('from Cython.Build import cythonize \n')
+    list_modules = []
     for anyfile in listfile:
         if type(anyfile) is not str:
             raise TypeError
-        anyfile = anyfile.replace("\\", "/")  # for window path
-        if name:
-            onefile.write(
-                'setup(name="{}",ext_modules=cythonize("{}", {})) \n'.format(name, anyfile, "language_level="+str(sys.version_info[0])))
-        else:
-            onefile.write('setup(ext_modules=cythonize("{}", {})) \n'.format(
-                anyfile, "language_level=" + str(sys.version_info[0])))
+        # if anyfile.endswith('__init__.py'):
+        #     continue
+        list_modules.append(f"'{anyfile}'")
+    onefile.write(f"modules = [{','.join(list_modules)}] \n")
+    l = f"language_level='{str(sys.version_info[0])}'"
+    onefile.write("setup(ext_modules=cythonize(%s, %s, compiler_directives={'annotation_typing': False})) \n" % ('modules', l))
     onefile.close()
 
 
-def write_init_file(listfile, path, name):
+def write_init_file(listfile, path, name: str):
     file_path = os.path.abspath(os.path.join(path, name))
     if not os.path.exists(file_path+'/__init__.py'):
         onefile = open(file_path+'/__init__.py', "w")
@@ -58,22 +80,125 @@ def ccompile(path=None, name=None):
                 'python build/setup.py build_ext --inplace', shell=True)
     else:
         cmd.call(
-            'python build/setup.py build_ext --build-lib {}'.format(path), shell=True)
+            'python build/setup.py build_ext --build-lib "{}"'.format(path), shell=True)
 
 
 def list_file_in_folder(file_path, suffix='.pyx', include=[], exclude=[]):
     list_file = []
     for file in os.listdir(file_path):
-        if not os.path.isdir(file) and file.endswith(suffix) and not file.endswith('__init__.py'): # exclude this refer to https://github.com/cython/cython/issues/2968
-            list_file.append(file_path+"/"+file)
-        if os.path.isdir(os.path.join(file_path, file)):
+        if not os.path.isdir(file) and file.endswith(suffix):
+            list_file.append(os.path.join(file_path, file))
+        if os.path.isdir(os.path.join(file_path, file)) and not file.endswith('__pycache__'):
             folder_path = os.path.abspath(os.path.join(file_path, file))
             # print(folder_path)
-            list_file.extend(list_file_in_folder(folder_path, suffix=suffix))
+            list_file.extend(list_file_in_folder(folder_path, suffix=suffix, exclude=exclude))
     return list_file
 
+def find_all_import_in_python_file(file_path):
+    res = []
+    with open(file_path, "r") as f:
+        data = f.read().splitlines()
+        for row in data:
+            if row.startswith('from ') or row.startswith('import ') or row.startswith('    from ') or row.startswith('    import '):
+                res.append(row)
+    return res
 
-def export(path, name=None, root=None, init_file=False, suffix='.pyx'):
+def find_import_statement(path, suffix='.pyx', exclude=[]):
+    # check if file or directory exist
+    if not os.path.exists(path):
+        raise ValueError('File or path not exist error:' + path)
+    # Get directory of modules need to compile:
+    basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
+    # __file__ will get the current cythoncompile path
+    file_path = os.path.abspath(os.path.join(basedir, path))
+    exclude_paths = []
+    files = []
+    list_import = set()
+    for p in exclude:
+        exclude_paths.extend(list_file_by_glob(p, suffix=suffix))
+    if os.path.isdir(file_path):
+        # loop over all file
+        raw_files = list_file_by_glob(file_path, suffix=suffix)
+        for f in raw_files:
+            if f not in exclude_paths:
+                f = f.replace("\\", "/")
+                files.append(f) # for window path
+        for f in files:
+            d = find_all_import_in_python_file(f)
+            list_import.update(d)
+        res = list(list_import)
+        res.sort(reverse=True)
+        return res
+    else:
+        d = find_all_import_in_python_file(file_path)
+        d.sort(reverse=True)
+        return d
+
+def remove_redundant_c_file(list_file: List[str]):
+    new_list = []
+    for f in list_file:
+        if f.endswith('.py'):
+            x = f[:-3] + '.c'
+        elif f.endswith('.pyx'):
+            x = f[:-4] + '.c'
+        else:
+            x, _ = f.split('.')
+            x = x + '.c'
+        new_list.append(x)
+    for f in new_list:
+        if os.path.exists(f) and os.path.isfile(f):
+            os.remove(f)
+            print('remove redundant file', f)
+        else:
+            print('file not exists', f)
+
+def is_match_pattern(word, pattern=[]):
+    if len(pattern)==0:
+        return True
+    for p in pattern:
+        if re.search(p, word):
+            return True
+    return False
+
+
+def build_one(src_dirs: List[str], onefile: str, root=None, ext='.py', outfile_ext='.pyx'):
+    convert_one_file(src_dirs, onefile)
+    export(onefile, root=root, suffix=outfile_ext)
+
+
+def convert_one_file(src_dirs: List[str], onefile: str, ext='.py'):
+    includesContents = ""
+    for src_dir in src_dirs:
+        files = []
+        # Get directory of modules need to compile:
+        basedir = os.path.abspath(os.path.dirname(sys.argv[0]))
+        # __file__ will get the current cythoncompile path
+        file_path = os.path.abspath(os.path.join(basedir, src_dir))
+        # print(file_path)
+        # check if file or directory exist
+        if not os.path.exists(file_path):
+            print('File path error:', file_path)
+            raise ValueError(
+                'Cannot compile this directory or file. It is not exist')
+
+        # check if it is a .pyx file
+        if os.path.isdir(src_dir):
+            if file_path == sys.argv[0]:
+                print('File path error:', file_path)
+                raise ValueError('Cannot compile this directory or file')
+            files = list_file_in_folder(file_path, suffix=ext, exclude=[])
+
+        for f in files:
+            if f.endswith(ext):
+                f = f.replace('\\','/')
+                includesContents += f'include "{f}" \n'
+
+    includesFile = open(onefile, "w")
+    includesFile.write(includesContents)
+    includesFile.close()
+
+
+def export(path, name=None, root=None, remove_redundant=True, suffix='.pyx', exclude=[], view_only=False):
     """Compile cython file (.pyx) into .so C-share file which can import and run in cpython as normal python package
 
     Arguments:
@@ -81,7 +206,6 @@ def export(path, name=None, root=None, init_file=False, suffix='.pyx'):
 
     Keyword Arguments:
         root {[str]} -- is a Folder relative or absolute path. If not None, it will export to the folder as specified in root (default: {None})
-        init_file {bool} -- Create __init__ file in root folder. Apply when only root is not None (default: {True})
 
     Raises:
         ValueError -- [description]
@@ -97,6 +221,10 @@ def export(path, name=None, root=None, init_file=False, suffix='.pyx'):
     # __file__ will get the current cythoncompile path
     file_path = os.path.abspath(os.path.join(basedir, path))
     # print(file_path)
+    exclude_paths = []
+    for p in exclude:
+        exclude_paths.extend(list_file_by_glob(p, suffix=suffix))
+    # print(exclude_paths)
     # check if file or directory exist
     if not os.path.exists(file_path):
         print('File path error:', file_path)
@@ -108,20 +236,26 @@ def export(path, name=None, root=None, init_file=False, suffix='.pyx'):
         if file_path == sys.argv[0]:
             print('File path error:', file_path)
             raise ValueError('Cannot compile this directory or file')
-        files = list_file_in_folder(file_path, suffix=suffix)
+        raw_files = list_file_by_glob(file_path, suffix=suffix)
+        # we should exclude '__init__.py' file due to this problem https://github.com/cython/cython/issues/2968
+        # update to version cython >3.0a5 may fix the problem
+        files = []
+        for f in raw_files:
+            if f not in exclude_paths: # exclude this refer to https://github.com/cython/cython/issues/2968
+                f = f.replace("\\", "/")
+                files.append(f) # for window path
+                print('compile file', f)
+            # else:
+            #     print('exclude file', f)
+        if view_only:
+            return
         write_setup_file(files, name=name)
-        if init_file:
-            write_init_file(files, basedir, path)
         # must be basedir because setup code will create a folder name as path
         if root is not None:
             basedir = os.path.abspath(os.path.join(basedir, root))
             file_path = os.path.abspath(os.path.join(basedir, path))
             if not os.path.exists(file_path):
                 os.makedirs(file_path)
-            if not os.path.exists(file_path+'/__init__.py'):
-                onefile = open(file_path+'/__init__.py', "w")
-                onefile.close()
-            # print(file_path)
             ccompile(path=basedir, name=name)
         else:
             ccompile(path=basedir, name=name)
@@ -133,6 +267,9 @@ def export(path, name=None, root=None, init_file=False, suffix='.pyx'):
             ccompile(path=basedir, name=name)
         else:
             ccompile(name=name)
+    # remove *.c file => this is redundant product
+    if remove_redundant:
+        remove_redundant_c_file(files)
     return files
 
 
